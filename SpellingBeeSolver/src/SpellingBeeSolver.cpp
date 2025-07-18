@@ -75,7 +75,7 @@
 
 #define FILE_INPUT_CHAR_ARRAY_LENGTH    128
 
-#define COMPILE_DEFAULT_DICTIONARY 1
+#define COMPILE_DEFAULT_DICTIONARY 0
 
 
 /*    **********************************************************************    */
@@ -326,76 +326,6 @@ int getLettersFromConsole(letters_t &letters, unsigned max_number_of_letters) {
 GET_LETTERS_RETURN:
     return letters.size();
 }
-
-dictionary_size_t loadDictionaryFromFile(DictionaryStruct &dictionary, std::string &filename) {
-
-    //    set the dictionary to a valid state
-    dictionary.size = 0;
-    dictionary.word_list = new std::string(DEFAULT_WORD);
-    dictionary_size_t num_words = 0;
-
-    //     attempt to open the file
-
-    std::ifstream dictionary_file(filename);
-    if (!dictionary_file.is_open()) {
-        std::cout << "file " << filename << " failed to open in path "
-                  << std::filesystem::current_path() << std::endl;
-        return dictionary.size;
-    }
-
-    //    count the number of words in the file
-    //      a word is defined as a string of text that terminates with
-    //      a ',', ' ', '\n'
-    char *line = new char[FILE_INPUT_CHAR_ARRAY_LENGTH];
-    char line_delimiter = '\n';
-
-    //    TODO - parse delimiters other than '\n'
-    while (!dictionary_file.eof()) {
-        num_words++;
-        dictionary_file.getline(line, FILE_INPUT_CHAR_ARRAY_LENGTH-1, line_delimiter);
-        if (!dictionary_file.fail()) {
-            num_words++;
-        } else {
-            break;
-        }
-    }
-
-    //     if counting the number of words in the file failed (or it is empty)
-    if (num_words == 0)
-        return dictionary.size;
-
-    // allocate the memory
-    try {
-        dictionary.word_list = new word_t[num_words];
-    } catch (...) {
-        std::cout << "allocation of dictionary containing " << num_words
-                  << " from file " << filename
-                  << " failed" << std::endl;
-        return dictionary.size;
-
-    }
-
-    //     move the istream back to the start of the file
-    dictionary_file.clear();
-    dictionary_file.seekg(std::ios::beg);
-
-    num_words = 0;
-    while (!dictionary_file.eof()) {
-        line[0] = '\0';
-        dictionary_file.getline(line, FILE_INPUT_CHAR_ARRAY_LENGTH-1, line_delimiter);
-        if (line[0] != '\0') {
-            dictionary.word_list[num_words] = line;
-            num_words++;
-        } else {
-            break;
-        }
-    }
-    dictionary.size = num_words;
-
-    dictionary_file.close();
-    return dictionary.size; // dictionary.size();
-}
-
 
 void parseCommandLine(int &letters_arg_position, int &filename_arg_position, int argc, char **argv)
 {
