@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <vector>
 #include <filesystem>
+#include <memory>
 #include <ctype.h>
 
 #include "FileDictionary.h"
@@ -74,7 +75,7 @@
 
 #define FILE_INPUT_CHAR_ARRAY_LENGTH    128
 
-#define COMPILE_DEFAULT_DICTIONARY 1
+#define COMPILE_DEFAULT_DICTIONARY 0
 
 
 /*    **********************************************************************    */
@@ -147,7 +148,8 @@ int main(int argc, char **argv) {
 
     MemoryDictionary default_dictionary(default_word_list, default_dictionary_size);
 
-    FileDictionary *imported_dictionary = nullptr;
+    FileDictionary *imported_dictionary;
+
     Dictionary *dictionary;
 
     //    attempt to open a dictionary file if provided
@@ -220,9 +222,9 @@ int main(int argc, char **argv) {
         std::cout << "No qualifying words found the dictionary" << std::endl;
     }
 
-    if (imported_dictionary) {
-        delete imported_dictionary;
-    }
+//    if (imported_dictionary) {
+//        delete imported_dictionary;
+//    }
 
     std::cout << std::endl << "SpellingBeeSolver completed" << std::endl;
     return EXIT_SUCCESS;
