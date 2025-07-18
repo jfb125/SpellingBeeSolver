@@ -74,7 +74,7 @@
 
 #define FILE_INPUT_CHAR_ARRAY_LENGTH    128
 
-#define COMPILE_DEFAULT_DICTIONARY 1
+#define COMPILE_DEFAULT_DICTIONARY 0
 
 
 /*    **********************************************************************    */
