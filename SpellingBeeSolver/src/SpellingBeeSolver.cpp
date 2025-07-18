@@ -115,9 +115,8 @@ bool ensureAllLettersAreInWord(letters_t &letters, word_t &word);
 bool ensureWordOnlyUsesLetters(letters_t &letters, word_t &word);
 int getLettersFromToken(letters_t &letters, char *cmd_line_token, unsigned max_number_of_letters);
 int getLettersFromConsole(letters_t &letters, unsigned max_number_of_letters);
-//dictionary_size_t loadDictionaryFromFile(DictionaryStruct &dictionary, std::string &filename);
 void parseCommandLine(int &letters_arg_position, int &filename_arg_position, int argc, char **argv);
-void printDictionary(Dictionary *dictionary, int num_words_at_start);
+void printDictionary(std::shared_ptr<Dictionary> &dictionary, int num_words_at_start);
 void removeDuplicateLetters(letters_t &letters);
 
 
@@ -146,11 +145,8 @@ int main(int argc, char **argv) {
     dictionary_size_t default_dictionary_size =
             static_cast<long>(sizeof(default_word_list)/sizeof(word_t));
 
-    MemoryDictionary default_dictionary(default_word_list, default_dictionary_size);
-
-    FileDictionary *imported_dictionary;
-
-    Dictionary *dictionary;
+    std::shared_ptr<FileDictionary> imported_dictionary;
+    std::shared_ptr<Dictionary> dictionary = std::make_shared<MemoryDictionary>(default_word_list, default_dictionary_size);
 
     //    attempt to open a dictionary file if provided
     std::string filename("");
@@ -164,19 +160,15 @@ int main(int argc, char **argv) {
     if (filename_arg_position != USE_DEFAULT_DICTIONARY) {
         filename.clear();
         filename += argv[filename_arg_position];
-        imported_dictionary = new FileDictionary(filename);
+        imported_dictionary = std::make_shared<FileDictionary>(filename);
         if (imported_dictionary->isError()) {
             std::cout << "Unable to load dictionary from file " << filename
                       << std::endl
                       << "Using default internal dictionary" << std::endl;
-            dictionary = &default_dictionary;
         } else {
             std::cout << "Opened dictionary file " << filename << std::endl;
             dictionary = imported_dictionary;
         }
-    } else {
-        std::cout << "Using default internal dictionary" << std::endl;
-        dictionary = &default_dictionary;
     }
 
     std::cout << std::endl;
@@ -221,10 +213,6 @@ int main(int argc, char **argv) {
     if (success_count == 0) {
         std::cout << "No qualifying words found the dictionary" << std::endl;
     }
-
-//    if (imported_dictionary) {
-//        delete imported_dictionary;
-//    }
 
     std::cout << std::endl << "SpellingBeeSolver completed" << std::endl;
     return EXIT_SUCCESS;
@@ -450,7 +438,7 @@ void parseCommandLine(int &letters_arg_position, int &filename_arg_position, int
 }
 
 
-void printDictionary(Dictionary *dictionary, int num_words_at_start) {
+void printDictionary(std::shared_ptr<Dictionary> &dictionary, int num_words_at_start) {
 
     // store iostream flags that will be modified using iomanip members
     std::ios_base::fmtflags _flags = std::cout.flags();
