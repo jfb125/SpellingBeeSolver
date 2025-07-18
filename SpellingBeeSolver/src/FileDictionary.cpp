@@ -41,7 +41,7 @@ FileDictionary& FileDictionary::operator=(const FileDictionary &other) {
 }
 #endif
 
-FileDictionary::FileDictionary(FileDictionary &&other) : Dictionary() {
+FileDictionary::FileDictionary(FileDictionary &&other) {
 	// move the dynamically allocated members of other
 	m_filename = other.m_filename;
 	other.m_filename = nullptr;
