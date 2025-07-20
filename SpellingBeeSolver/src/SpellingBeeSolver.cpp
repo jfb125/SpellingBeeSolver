@@ -116,7 +116,7 @@ bool ensureWordOnlyUsesLetters(letters_t &letters, word_t &word);
 int getLettersFromToken(letters_t &letters, char *cmd_line_token, unsigned max_number_of_letters);
 int getLettersFromConsole(letters_t &letters, unsigned max_number_of_letters);
 void parseCommandLine(int &letters_arg_position, int &filename_arg_position, int argc, char **argv);
-void printDictionary(std::shared_ptr<Dictionary> &dictionary, int num_words_at_start);
+void printDictionary(std::unique_ptr<Dictionary> &dictionary, int num_words_at_start);
 void removeDuplicateLetters(letters_t &letters);
 
 
@@ -145,8 +145,8 @@ int main(int argc, char **argv) {
     dictionary_size_t default_dictionary_size =
             static_cast<long>(sizeof(default_word_list)/sizeof(word_t));
 
-    std::shared_ptr<FileDictionary> imported_dictionary;
-    std::shared_ptr<Dictionary> dictionary = std::make_shared<MemoryDictionary>(default_word_list, default_dictionary_size);
+    std::unique_ptr<FileDictionary> imported_dictionary;
+    std::unique_ptr<Dictionary> dictionary = std::make_unique<MemoryDictionary>(default_word_list, default_dictionary_size);
 
     //    attempt to open a dictionary file if provided
     std::string filename("");
@@ -160,15 +160,17 @@ int main(int argc, char **argv) {
     if (filename_arg_position != USE_DEFAULT_DICTIONARY) {
         filename.clear();
         filename += argv[filename_arg_position];
-        imported_dictionary = std::make_shared<FileDictionary>(filename);
-        if (imported_dictionary->isError()) {
+        imported_dictionary = std::make_unique<FileDictionary>(filename);
+        if (!imported_dictionary->isError()) {
+            std::cout << "Opened dictionary file " << filename << std::endl;
+            dictionary = std::move(imported_dictionary);
+        } else {
             std::cout << "Unable to load dictionary from file " << filename
                       << std::endl
                       << "Using default internal dictionary" << std::endl;
-        } else {
-            std::cout << "Opened dictionary file " << filename << std::endl;
-            dictionary = imported_dictionary;
         }
+    } else {
+        std::cout << "Using default internal dictionary" << std::endl; 
     }
 
     std::cout << std::endl;
@@ -189,30 +191,32 @@ int main(int argc, char **argv) {
     }
     letters_str += '"';
 
-    if (letters.size() < minimum_number_of_letters_to_search_for) {
-        std::cout << "Error: Only " << letters.size()
-                  << " letters will result in too many matches." << std::endl
-                  << "       Not performing search" << std::endl;
-        return EXIT_SUCCESS;
-    }
+    if (letters.size() >= minimum_number_of_letters_to_search_for) {
+        std::cout << "Searching for words that contain all of these and only these letters:    "
+               << letters_str << std::endl << std::endl;
+        int success_count = 0;
 
-    std::cout << "Searching for words that contain all of these and only these letters:    "
-              << letters_str << std::endl << std::endl;
-    int success_count = 0;
+        while (dictionary->isNext()) {
+            std::string word = dictionary->nextWord();
+            if (ensureAllLettersAreInWord(letters, word) &&
+                ensureWordOnlyUsesLetters(letters, word)) {
 
-    while (dictionary->isNext()) {
-        std::string word = dictionary->nextWord();
-        if (ensureAllLettersAreInWord(letters, word) &&
-            ensureWordOnlyUsesLetters(letters, word)) {
-
-            std::cout << std::setw(WORD_NUMBER_PRINTED_WIDTH)
-                      << ++success_count << ": "
-                      << letters_str << "   found in word   " << word << std::endl;
+                std::cout << std::setw(WORD_NUMBER_PRINTED_WIDTH)
+                          << ++success_count << ": "
+                          << letters_str << "   found in word   " << word << std::endl;
+            }
         }
-    }
-    if (success_count == 0) {
-        std::cout << "No qualifying words found the dictionary" << std::endl;
-    }
+        if (success_count == 0) {
+            std::cout << "No qualifying words found the dictionary" << std::endl;
+        }
+    } else {
+        // there were an insufficient number of letters to search for, but not == 0 which means quit
+        if (letters.size() > 0) {
+            std::cout << "Error: Only " << letters.size()
+                      << " letters will result in too many matches." << std::endl
+                      << "       Not performing search" << std::endl;
+        }   
+    } 
 
     std::cout << std::endl << "SpellingBeeSolver completed" << std::endl;
     return EXIT_SUCCESS;
@@ -368,7 +372,7 @@ void parseCommandLine(int &letters_arg_position, int &filename_arg_position, int
 }
 
 
-void printDictionary(std::shared_ptr<Dictionary> &dictionary, int num_words_at_start) {
+void printDictionary(std::unique_ptr<Dictionary> &dictionary, int num_words_at_start) {
 
     // store iostream flags that will be modified using iomanip members
     std::ios_base::fmtflags _flags = std::cout.flags();
@@ -390,6 +394,7 @@ void printDictionary(std::shared_ptr<Dictionary> &dictionary, int num_words_at_s
         std::cout << std::setw(5) << std::right << i << ": "
                   << dictionary->nextWord() << std::endl;
     }
+    std::cout << std::endl;
     dictionary->begining();
 
     // restore iostream flags that were modified using iomanip members
